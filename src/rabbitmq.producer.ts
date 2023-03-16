@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {bind, BindingScope, config} from '@loopback/core';
-import amqp, {Channel, Connection} from 'amqplib';
+import { bind, BindingScope, config } from '@loopback/core';
+import amqp, { Channel, Connection } from 'amqplib';
 import debugFactory from 'debug';
 import {
   ConfigDefaults,
   RabbitmqBindings,
-  RabbitmqComponentConfig
+  RabbitmqComponentConfig,
 } from './index';
 
 const debug = debugFactory('loopback:rabbitmq:producer');
@@ -18,7 +18,7 @@ export const isObject = (obj: any) => {
   return type === 'function' || (type === 'object' && !!obj);
 };
 
-@bind({scope: BindingScope.SINGLETON})
+@bind({ scope: BindingScope.SINGLETON })
 export class RabbitmqProducer {
   private connection: Connection | undefined;
   private channel: Channel | undefined;
@@ -27,10 +27,10 @@ export class RabbitmqProducer {
   private connectionIsClosing = false;
 
   constructor(
-    @config({fromBinding: RabbitmqBindings.COMPONENT})
+    @config({ fromBinding: RabbitmqBindings.COMPONENT })
     private componentConfig: RabbitmqComponentConfig = ConfigDefaults,
   ) {
-    this.componentConfig = {...ConfigDefaults, ...this.componentConfig};
+    this.componentConfig = { ...ConfigDefaults, ...this.componentConfig };
     debug('created an instance of RabbitmqProducer: %o', this.componentConfig);
   }
 
@@ -124,20 +124,19 @@ export class RabbitmqProducer {
             () => { },
           );
         }
-          if (this.connection) {
-            this.connectionIsClosing = true;
-            this.connection.close().then(
-              () => {
-                debug('timeout::connection closed');
-                this.connection = undefined;
-                resolve();
-              },
-              () => { },
-            );
-          } else {
-            resolve();
-          }
-
+        if (this.connection) {
+          this.connectionIsClosing = true;
+          this.connection.close().then(
+            () => {
+              debug('timeout::connection closed');
+              this.connection = undefined;
+              resolve();
+            },
+            () => { },
+          );
+        } else {
+          resolve();
+        }
       }, ms);
     });
 
@@ -170,9 +169,8 @@ export class RabbitmqProducer {
     const buffer = this.parseToBuffer(content);
     const channel = await this.getChannel();
     //Cria uma Queue Caso não exista
-    await channel.assertQueue(queue, {durable});
-
-    channel.sendToQueue(queue, buffer, {persistent});
+    await channel.assertQueue(queue, { durable });
+    channel.sendToQueue(queue, buffer, { persistent });
   }
 
   public async publish(
@@ -180,12 +178,10 @@ export class RabbitmqProducer {
     routingKey: string | string[],
     message: any,
     options?: amqp.Options.Publish,
-  ) {
+  ): Promise<void> {
     const channel = await this.getChannel();
     const buffer = this.parseToBuffer(message);
-
     const routingKeys = Array.isArray(routingKey) ? routingKey : [routingKey];
-
     for (const route of routingKeys) {
       channel.publish(exchange, route, buffer, options);
     }
